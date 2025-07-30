@@ -924,6 +924,21 @@
                     messageInput.value = '';
                 }
             });
+            // Send chat on Enter
+            document.getElementById('message-input').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('send-btn').click();
+                }
+            });
+
+            // Save note on Enter (but allow Shift+Enter for newline)
+            document.getElementById('note-content').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    document.getElementById('save-note-btn').click();
+                }
+            });
             function renderMessages(messages) {
                 const messagesContainer = document.getElementById('messages-container');
                 messagesContainer.innerHTML = '';
