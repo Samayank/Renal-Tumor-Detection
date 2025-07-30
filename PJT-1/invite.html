@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accept Invitation - Project Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-center text-slate-800">Accept Invitation</h1>
+        <p class="text-center text-slate-600">Set up your password to join the project hub.</p>
+        <form id="invite-form" class="space-y-6">
+            <div>
+                <label for="password" class="text-sm font-medium text-slate-700">Password</label>
+                <input type="password" id="password" name="password" required class="w-full p-2 mt-1 border rounded-md" minlength="6">
+            </div>
+            <div>
+                <label for="confirm-password" class="text-sm font-medium text-slate-700">Confirm Password</label>
+                <input type="password" id="confirm-password" name="confirmPassword" required class="w-full p-2 mt-1 border rounded-md" minlength="6">
+            </div>
+            <button type="submit" class="w-full py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Accept Invitation</button>
+        </form>
+        <p id="message" class="text-sm text-center"></p>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (!token) {
+            document.getElementById('message').innerHTML = '<span class="text-red-500">Invalid invitation link.</span>';
+            document.getElementById('invite-form').style.display = 'none';
+        }
+
+        document.getElementById('invite-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const message = document.getElementById('message');
+
+            if (password !== confirmPassword) {
+                message.innerHTML = '<span class="text-red-500">Passwords do not match.</span>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/accept-invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to accept invitation');
+                }
+
+                message.innerHTML = '<span class="text-green-500">Account activated successfully! Redirecting to login...</span>';
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+            } catch (error) {
+                message.innerHTML = `<span class="text-red-500">${error.message}</span>`;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "channel": "integration",
+  "timestamp": "2025-07-30T13:15:14.332Z",
+  "messagesCount": 1,
+  "messages": [
+    {
+      "sender": "Admin User",
+      "content": "Integration of both models progressing well",
+      "messageType": "text",
+      "createdAt": "2025-07-30T09:39:01.773Z"
+    }
+  ]
+}

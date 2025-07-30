@@ -1,0 +1,13 @@
+{
+  "channel": "general",
+  "timestamp": "2025-07-30T09:39:01.817Z",
+  "messagesCount": 1,
+  "messages": [
+    {
+      "sender": "Admin User",
+      "content": "Daily standup: all on track!",
+      "messageType": "text",
+      "createdAt": "2025-07-30T09:39:01.776Z"
+    }
+  ]
+}
