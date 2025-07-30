@@ -169,9 +169,13 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // Gemini Proxy
-app.post('/api/gemini', authenticateToken, async (req, res) => {
+app.post('/api/gemini', async (req, res) => {
     try {
         const { prompt } = req.body;
+        
+        console.log('Gemini API call - Prompt:', prompt);
+        console.log('API Key present:', !!process.env.GEMINI_API_KEY);
+        console.log('API Key length:', process.env.GEMINI_API_KEY?.length);
         
         if (!prompt) {
             return res.status(400).json({ error: 'Prompt is required' });
@@ -181,6 +185,7 @@ app.post('/api/gemini', authenticateToken, async (req, res) => {
         const apiKey = process.env.GEMINI_API_KEY;
         
         if (!apiKey) {
+            console.log('No API key found in environment');
             return res.status(500).json({ error: 'API key not configured' });
         }
 
@@ -188,17 +193,23 @@ app.post('/api/gemini', authenticateToken, async (req, res) => {
         const payload = { contents: chatHistory };
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
+        console.log('Making request to Gemini API...');
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
+        console.log('Gemini API response status:', response.status);
+        
         if (!response.ok) {
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.log('Gemini API error response:', errorText);
+            throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('Gemini API success - response received');
         res.json(result);
 
     } catch (error) {
