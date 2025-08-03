@@ -72,14 +72,83 @@
             100% { transform: rotate(360deg); }
         }
         .gemini-output {
-            white-space: pre-wrap;
-            background-color: #f0f9ff; /* sky-50 */
-            border-left: 4px solid #0284c7; /* sky-600 */
-            padding: 1rem;
-            border-radius: 0.25rem;
             margin-top: 1rem;
-            font-family: monospace;
-            color: #0c4a6e; /* sky-900 */
+            padding: 1rem;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        
+        .gemini-output p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+        
+        .gemini-output strong {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .gemini-output em {
+            font-style: italic;
+            color: #475569;
+        }
+        
+        .gemini-output ul {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        .gemini-output li {
+            margin-bottom: 0.25rem;
+            line-height: 1.5;
+        }
+        
+        .gemini-output h3, .gemini-output h4 {
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .gemini-output h3 {
+            font-size: 1.125rem;
+        }
+        
+        .gemini-output h4 {
+            font-size: 1rem;
+        }
+        
+        .gemini-output blockquote {
+            margin: 0.75rem 0;
+            padding: 0.5rem 1rem;
+            background-color: #f1f5f9;
+            border-left: 4px solid #3b82f6;
+            font-style: italic;
+        }
+        
+        .gemini-output code {
+            background-color: #f1f5f9;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .gemini-output pre {
+            background-color: #1e293b;
+            color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+        
+        .gemini-output pre code {
+            background-color: transparent;
+            padding: 0;
+            color: inherit;
         }
         .channel-btn {
             padding: 0.5rem 1rem;
@@ -110,6 +179,7 @@
           <option value="Samayank">Samayank</option>
           <option value="Sarthak">Sarthak</option>
           <option value="Daksh">Daksh</option>
+          <option value="Dr. Logeshwari G">Dr. Logeshwari G</option>
         </select>
         <label class="font-semibold">Password:</label>
         <input type="password" id="login-password" class="p-2 border rounded" placeholder="Password">
@@ -243,7 +313,7 @@
                 <p class="text-slate-600 leading-relaxed">Leverage the power of the Gemini API to accelerate your project. This assistant can help you break down complex tasks, understand difficult concepts, and identify potential risks before they become problems. Select a tool below to get started.</p>
             </div>
 
-            <div class="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                 <!-- Task Decomposer -->
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-bold text-slate-800 mb-4">Task Decomposer</h3>
@@ -278,6 +348,68 @@
                         <div class="loader hidden"></div>
                     </button>
                     <div id="risk-output" class="gemini-output hidden"></div>
+                </div>
+
+                <!-- Code Generator -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">💻 Code Generator</h3>
+                    <p class="text-slate-600 text-sm mb-4">Generate code snippets for common ML/AI tasks in this project.</p>
+                    <select id="code-type-select" class="w-full p-2 border rounded-md bg-white mb-3">
+                        <option value="">Select code type...</option>
+                        <option value="monai-preprocessing">MONAI Preprocessing Pipeline</option>
+                        <option value="pytorch-model">PyTorch Model Definition</option>
+                        <option value="data-loading">Data Loading & Augmentation</option>
+                        <option value="training-loop">Training Loop</option>
+                        <option value="evaluation">Model Evaluation</option>
+                        <option value="genomics-features">Genomics Feature Selection</option>
+                        <option value="fusion-strategies">Late Fusion Strategies</option>
+                        <option value="visualization">Data Visualization</option>
+                    </select>
+                    <textarea id="code-context" class="w-full p-2 border rounded-md h-20 mb-3" placeholder="Additional context or specific requirements..."></textarea>
+                    <button id="generate-code-btn" class="mt-4 w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm hover:bg-green-700 flex items-center justify-center gap-2 disabled:bg-slate-400">
+                        <span class="btn-text">💻 Generate Code</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                    <div id="code-output" class="gemini-output hidden">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-semibold text-slate-700">Generated Code:</span>
+                            <button id="copy-code-btn" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded">Copy</button>
+                        </div>
+                        <pre id="code-content" class="bg-slate-100 p-3 rounded text-sm overflow-x-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- AI Chatbot -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">🤖 AI Chatbot</h3>
+                    <p class="text-slate-600 text-sm mb-4">Ask questions about the project, get help with implementation, or discuss technical concepts.</p>
+                    
+                    <!-- Chat Messages -->
+                    <div id="chatbot-messages" class="h-64 overflow-y-auto border rounded-md p-3 mb-3 bg-slate-50">
+                        <div class="text-center text-slate-500 text-sm py-4">
+                            Ask me anything about the project! I can help with technical questions, implementation guidance, and project planning.
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="flex gap-2">
+                        <input type="text" id="chatbot-input" placeholder="Type your question..." class="flex-1 p-2 border rounded-md">
+                        <button id="send-chatbot-btn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center justify-center gap-2 disabled:bg-slate-400">
+                            <span class="btn-text">Send</span>
+                            <div class="loader hidden"></div>
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Questions -->
+                    <div class="mt-3">
+                        <p class="text-xs text-slate-500 mb-2">Quick questions:</p>
+                        <div class="flex flex-wrap gap-1">
+                            <button class="quick-question-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded" data-question="How do I set up the MONAI environment?">Setup</button>
+                            <button class="quick-question-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded" data-question="What's the best approach for data preprocessing?">Preprocessing</button>
+                            <button class="quick-question-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded" data-question="How should I handle the fusion of imaging and genomic data?">Fusion</button>
+                            <button class="quick-question-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded" data-question="What evaluation metrics should I use?">Metrics</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -402,7 +534,8 @@
             let users = [
                 { _id: '1', name: 'Samayank' },
                 { _id: '2', name: 'Sarthak' },
-                { _id: '3', name: 'Daksh' }
+                { _id: '3', name: 'Daksh' },
+                { _id: '4', name: 'Dr. Logeshwari G' }
             ];
             try {
                 const res = await fetch('/api/users');
@@ -571,21 +704,46 @@
                     alert('Please enter a task.');
                     return;
                 }
-                const prompt = `You are an expert ML engineering manager specializing in medical AI projects. Break down the following high-level task into a detailed, actionable checklist of sub-tasks for a junior ML engineer. Format the output as a list. Task: "${taskInput}"`;
+                const prompt = `You are an expert ML engineering manager specializing in medical AI projects. Break down the following high-level task into a detailed, actionable checklist of sub-tasks for a junior ML engineer. 
+
+Use clear, structured formatting with:
+- **Bold headers** for main sections
+- Bullet points for sub-tasks
+- Clear, concise explanations
+- Practical, actionable steps
+
+Task: "${taskInput}"`;
                 callGemini(prompt, document.getElementById('decompose-task-btn'), document.getElementById('task-output'));
             });
 
             document.getElementById('explain-concept-btn').addEventListener('click', () => {
                 const selectedConcept = knowledgeBase.find(c => c.title === conceptSelect.value);
                 if (!selectedConcept) return;
-                const prompt = `You are a patient and clear science communicator. Explain the following concept to a team member who is intelligent but not an expert in this specific domain. Use analogies if helpful, but keep it concise and focused on the core idea. Concept: "${selectedConcept.title}". Original description for context: "${selectedConcept.content}"`;
+                const prompt = `You are a patient and clear science communicator. Explain the following concept to a team member who is intelligent but not an expert in this specific domain. 
+
+Use the following approach:
+- Start with a simple, relatable **analogy** (like comparing complex concepts to everyday objects)
+- Break down the concept into clear sections with **bold headers**
+- Use bullet points for key points
+- Keep it concise but comprehensive
+- Focus on the core idea and practical implications
+
+Concept: "${selectedConcept.title}". Original description for context: "${selectedConcept.content}"`;
                 callGemini(prompt, document.getElementById('explain-concept-btn'), document.getElementById('concept-output'));
             });
             
             document.getElementById('identify-risk-btn').addEventListener('click', () => {
                 const selectedPhase = playbookData.find(p => p.title === playbookSelect.value);
                 if (!selectedPhase) return;
-                const prompt = `You are a senior project manager with deep experience in complex, multi-modal AI research projects. For the following project phase, identify 3-4 potential technical or logistical risks. For each risk, suggest a concrete mitigation strategy. Format as a list of risks, each with its own mitigation. Phase: "${selectedPhase.title}". Description: "${selectedPhase.content}"`;
+                const prompt = `You are a senior project manager with deep experience in complex, multi-modal AI research projects. For the following project phase, identify 3-4 potential technical or logistical risks. 
+
+Format your response with:
+- **Clear risk categories** as bold headers
+- Bullet points for each risk and its mitigation
+- Practical, actionable mitigation strategies
+- Prioritized by impact and likelihood
+
+Phase: "${selectedPhase.title}". Description: "${selectedPhase.content}"`;
                 callGemini(prompt, document.getElementById('identify-risk-btn'), document.getElementById('risk-output'));
             });
             // --- End Gemini API Integration ---
@@ -683,6 +841,246 @@
                     `;
                     knowledgeBaseContainer.appendChild(card);
                 });
+            }
+
+            // --- Code Generator Functionality ---
+            document.getElementById('generate-code-btn').addEventListener('click', () => {
+                const codeType = document.getElementById('code-type-select').value;
+                const context = document.getElementById('code-context').value;
+                
+                if (!codeType) {
+                    alert('Please select a code type.');
+                    return;
+                }
+                
+                const codePrompts = {
+                    'monai-preprocessing': `Generate a complete MONAI preprocessing pipeline for medical CT images. Include data loading, normalization, augmentation, and batching. Context: ${context}`,
+                    'pytorch-model': `Create a PyTorch model definition for a 3D CNN suitable for medical image classification. Include proper layer structure and forward pass. Context: ${context}`,
+                    'data-loading': `Write a data loading and augmentation pipeline for medical imaging datasets. Include DICOM/NIfTI loading, preprocessing, and PyTorch DataLoader setup. Context: ${context}`,
+                    'training-loop': `Create a complete training loop for a medical AI model. Include loss calculation, optimization, validation, and checkpointing. Context: ${context}`,
+                    'evaluation': `Generate code for model evaluation including metrics calculation (AUC, F1, precision, recall) and result visualization. Context: ${context}`,
+                    'genomics-features': `Create a feature selection pipeline for genomic data using scikit-learn. Include preprocessing, feature selection methods, and validation. Context: ${context}`,
+                    'fusion-strategies': `Implement late fusion strategies for combining imaging and genomic model predictions. Include averaging, weighted fusion, and stacking approaches. Context: ${context}`,
+                    'visualization': `Generate code for data visualization including plots for model performance, data distribution, and results analysis. Context: ${context}`
+                };
+                
+                const prompt = `You are an expert ML engineer specializing in medical AI. Generate clean, well-commented Python code for the following request. 
+
+**Format your response with:**
+- **Clear section headers** explaining what the code does
+- Well-commented, production-ready code
+- Brief explanations of key concepts
+- Proper imports and setup instructions
+- Error handling where appropriate
+
+${codePrompts[codeType]}
+
+Provide the code in a clear, structured format that's easy to understand and implement.`;
+                callGemini(prompt, document.getElementById('generate-code-btn'), document.getElementById('code-output'));
+            });
+
+            // Copy code functionality
+            document.getElementById('copy-code-btn').addEventListener('click', () => {
+                const codeContent = document.getElementById('code-content').textContent;
+                navigator.clipboard.writeText(codeContent).then(() => {
+                    const btn = document.getElementById('copy-code-btn');
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+
+            // --- Chatbot Functionality ---
+            let chatbotHistory = [];
+            
+            function addChatbotMessage(content, isUser = false) {
+                const messagesContainer = document.getElementById('chatbot-messages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `mb-3 ${isUser ? 'text-right' : 'text-left'}`;
+                
+                const bubbleDiv = document.createElement('div');
+                bubbleDiv.className = `inline-block max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                    isUser 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-white border border-slate-200 text-slate-800'
+                }`;
+                
+                if (isUser) {
+                    bubbleDiv.textContent = content;
+                } else {
+                    // Format AI responses with enhanced styling
+                    bubbleDiv.innerHTML = formatResponseText(content);
+                }
+                
+                messageDiv.appendChild(bubbleDiv);
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Store in history
+                chatbotHistory.push({ content, isUser, timestamp: new Date() });
+            }
+
+            function sendChatbotMessage() {
+                const input = document.getElementById('chatbot-input');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message
+                addChatbotMessage(message, true);
+                input.value = '';
+                
+                // Disable send button and show loading
+                const sendBtn = document.getElementById('send-chatbot-btn');
+                const btnText = sendBtn.querySelector('.btn-text');
+                const loader = sendBtn.querySelector('.loader');
+                
+                sendBtn.disabled = true;
+                btnText.classList.add('hidden');
+                loader.classList.remove('hidden');
+                
+                // Create context-aware prompt
+                const contextPrompt = `You are an expert AI assistant for a medical AI research project focused on kidney cancer classification using CT imaging and genomic data. The project involves:
+- 3D U-Net for tumor segmentation
+- 3D DenseNet for CT-based classification  
+- MLP for genomic classification
+- Late fusion strategies for combining modalities
+- MONAI, PyTorch, and scikit-learn frameworks
+
+Provide helpful, technical guidance for: "${message}"
+
+**Format your responses with:**
+- Clear, structured explanations
+- **Bold headers** for main sections
+- Bullet points for key points
+- Simple analogies when explaining complex concepts
+- Practical, actionable advice
+- Concise but comprehensive information
+
+Keep responses helpful and focused on the specific question asked.`;
+                
+                // Call Gemini API
+                callGemini(contextPrompt, sendBtn, null, (response) => {
+                    addChatbotMessage(response, false);
+                });
+            }
+
+            // Send message on button click
+            document.getElementById('send-chatbot-btn').addEventListener('click', sendChatbotMessage);
+            
+            // Send message on Enter key
+            document.getElementById('chatbot-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatbotMessage();
+                }
+            });
+
+            // Quick question buttons
+            document.querySelectorAll('.quick-question-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const question = btn.getAttribute('data-question');
+                    document.getElementById('chatbot-input').value = question;
+                    sendChatbotMessage();
+                });
+            });
+
+            // Modified callGemini function to support callback and better formatting
+            async function callGemini(prompt, button, outputElement, callback = null) {
+                const btnText = button.querySelector('.btn-text');
+                const loader = button.querySelector('.loader');
+                
+                button.disabled = true;
+                btnText.classList.add('hidden');
+                loader.classList.remove('hidden');
+                
+                try {
+                    const response = await fetch('/api/gemini', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        
+                        const text = result.candidates[0].content.parts[0].text;
+                        
+                        if (callback) {
+                            // For chatbot, use callback
+                            callback(text);
+                        } else if (outputElement) {
+                            // For other outputs, check if it's code
+                            if (outputElement.id === 'code-content') {
+                                // Format as code
+                                outputElement.textContent = text;
+                                document.getElementById('code-output').classList.remove('hidden');
+                            } else {
+                                // Format as regular text with enhanced styling
+                                const formattedText = formatResponseText(text);
+                                outputElement.innerHTML = formattedText;
+                                outputElement.classList.remove('hidden');
+                            }
+                        }
+                    } else {
+                        const errorText = 'Error: Received an empty or invalid response from the API.';
+                        if (callback) {
+                            callback(errorText);
+                        } else if (outputElement) {
+                            outputElement.textContent = errorText;
+                            outputElement.classList.remove('hidden');
+                        }
+                    }
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    const errorText = `An error occurred: ${error.message}`;
+                    if (callback) {
+                        callback(errorText);
+                    } else if (outputElement) {
+                        outputElement.textContent = errorText;
+                        outputElement.classList.remove('hidden');
+                    }
+                } finally {
+                    button.disabled = false;
+                    loader.classList.add('hidden');
+                    btnText.classList.remove('hidden');
+                }
+            }
+
+            // Function to format response text with better styling
+            function formatResponseText(text) {
+                return text
+                    // Convert **bold** to <strong> tags
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // Convert *italic* to <em> tags
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    // Convert bullet points to proper HTML lists
+                    .replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li>$1</li>')
+                    // Convert numbered lists
+                    .replace(/^[\s]*\d+\.\s+(.+)$/gm, '<li>$1</li>')
+                    // Wrap consecutive <li> elements in <ul> tags
+                    .replace(/(<li>.*<\/li>)/gs, '<ul class="list-disc ml-6 mb-4 space-y-1">$1</ul>')
+                    // Convert line breaks to paragraphs
+                    .split('\n\n')
+                    .map(paragraph => {
+                        if (paragraph.trim() === '') return '';
+                        if (paragraph.includes('<ul>')) return paragraph;
+                        if (paragraph.includes('<li>')) return paragraph;
+                        return `<p class="mb-3 leading-relaxed">${paragraph}</p>`;
+                    })
+                    .join('')
+                    // Clean up any double <ul> tags
+                    .replace(/<\/ul>\s*<ul[^>]*>/g, '')
+                    // Add spacing between sections
+                    .replace(/<\/p>\s*<p>/g, '</p><p class="mb-3 leading-relaxed">');
             }
 
             function handleNav(hash) {
@@ -1043,4 +1441,3 @@
     </script>
 </body>
 </html>
-

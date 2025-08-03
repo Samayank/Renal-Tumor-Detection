@@ -28,9 +28,37 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Database Connection ---
+// --- Database Connection and Data Initialization ---
+const initializeData = async () => {
+    try {
+        // Create fixed users in database if they don't exist
+        const fixedUsers = [
+            { name: 'Samayank', email: 'samayank@example.com', password: 'Goel', role: 'admin' },
+            { name: 'Sarthak', email: 'sarthak@example.com', password: 'Luhadia', role: 'imaging' },
+            { name: 'Daksh', email: 'daksh@example.com', password: 'Singla', role: 'genomics' },
+            { name: 'Dr. Logeshwari G', email: 'logeshwari@example.com', password: 'admin', role: 'integration' }
+        ];
+
+        for (const userData of fixedUsers) {
+            const existingUser = await User.findOne({ email: userData.email });
+            if (!existingUser) {
+                await User.create(userData);
+                console.log(`Created user: ${userData.name}`);
+            }
+        }
+
+        console.log('Database connection established and users initialized');
+    } catch (error) {
+        console.error('Error initializing data:', error);
+    }
+};
+
+// Connect to MongoDB and initialize data
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('MongoDB connected successfully'))
+    .then(() => {
+        console.log('MongoDB connected successfully');
+        return initializeData();
+    })
     .catch(err => console.error('MongoDB connection error:', err));
 
 // --- Initialize Google Drive ---
@@ -50,11 +78,34 @@ setInterval(async () => {
 const FIXED_USERS = [
   { _id: '1', name: 'Samayank', password: 'Goel' },
   { _id: '2', name: 'Sarthak', password: 'Luhadia' },
-  { _id: '3', name: 'Daksh', password: 'Singla' }
+  { _id: '3', name: 'Daksh', password: 'Singla' },
+  { _id: '4', name: 'Dr. Logeshwari G', password: 'admin' }
 ];
 
 // Helper to get user by id
-function getUserById(id) {
+async function getUserById(id) {
+  // First try to find in database by email (using the fixed user mapping)
+  const userMap = {
+    '1': 'samayank@example.com',
+    '2': 'sarthak@example.com', 
+    '3': 'daksh@example.com',
+    '4': 'logeshwari@example.com'
+  };
+  
+  const email = userMap[id];
+  if (email) {
+    const dbUser = await User.findOne({ email });
+    if (dbUser) {
+      return {
+        _id: dbUser._id.toString(),
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role
+      };
+    }
+  }
+  
+  // Fallback to fixed users array
   return FIXED_USERS.find(u => u._id === id);
 }
 
@@ -65,46 +116,67 @@ app.get('/api/users', (req, res) => {
   res.json(FIXED_USERS);
 });
 
-// Notes Routes (no auth)
+// Notes endpoint
 app.get('/api/notes', async (req, res) => {
   try {
+    // Always fetch from database to ensure we have the latest notes
     const notes = await Note.find().populate('author', 'name');
-    res.json(notes.map(note => ({
-      ...note.toObject(),
+    const formattedNotes = notes.map(note => ({
+      id: note._id.toString(),
+      authorId: note.author._id.toString(),
+      title: note.title,
+      content: note.content,
+      phase: note.phase,
+      tags: note.tags,
+      isCompleted: note.isCompleted,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
       author: note.author
-    })));
+    }));
+    res.json(formattedNotes);
   } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch notes.' });
+    console.error('Error fetching notes:', e);
+    res.status(500).json({ error: 'Failed to fetch notes from database' });
   }
 });
 
 app.post('/api/notes', async (req, res) => {
   try {
     const { authorId, title, content, phase, tags } = req.body;
-    const author = getUserById(authorId);
+    const author = await getUserById(authorId);
     if (!author || !title || !content) return res.status(400).json({ error: 'Invalid data' });
-    // Save to DB
+    
+    // Save to DB using the MongoDB ObjectId from the database user
     const dbNote = await Note.create({
-      author: authorId,
+      author: author._id, // This should now be a valid MongoDB ObjectId
       title,
       content,
-      phase,
-      tags
+      phase: phase || 'general',
+      tags: tags || []
     });
-    // Save to memory for legacy compatibility
-    if (!global.notes) global.notes = [];
+    
+    // Populate the author field for the response
+    const populatedNote = await Note.findById(dbNote._id).populate('author', 'name _id');
+    
+    // Return the formatted note
     const note = {
       id: dbNote._id.toString(),
-      authorId,
+      authorId: author._id,
+      author: {
+        _id: author._id,
+        name: author.name
+      },
       title,
       content,
-      phase,
-      tags,
-      createdAt: dbNote.createdAt
+      phase: phase || 'general',
+      tags: tags || [],
+      createdAt: dbNote.createdAt,
+      updatedAt: dbNote.updatedAt
     };
-    global.notes.unshift(note);
-    res.status(201).json({ ...note, author });
+    
+    res.status(201).json(note);
   } catch (e) {
+    console.error('Error creating note:', e);
     res.status(400).json({ error: 'Failed to create note.' });
   }
 });
@@ -112,17 +184,15 @@ app.post('/api/notes', async (req, res) => {
 // Delete a single note by ID
 app.delete('/api/notes/:id', async (req, res) => {
   const { id } = req.params;
-  if (!global.notes) global.notes = [];
-  const initialLength = global.notes.length;
-  global.notes = global.notes.filter(note => note.id !== id);
   try {
-    await Note.deleteOne({ _id: id });
-    if (global.notes.length < initialLength) {
+    const result = await Note.deleteOne({ _id: id });
+    if (result.deletedCount > 0) {
       res.json({ success: true, message: 'Note deleted.' });
     } else {
       res.status(404).json({ error: 'Note not found.' });
     }
   } catch (e) {
+    console.error('Error deleting note:', e);
     res.status(500).json({ error: 'Failed to delete note from database.' });
   }
 });
@@ -131,39 +201,60 @@ app.delete('/api/notes/:id', async (req, res) => {
 app.get('/api/chat/:channel', async (req, res) => {
   const { channel } = req.params;
   try {
-    const messages = await Message.find({ channel }).populate('sender', 'name');
-    res.json(messages.map(msg => ({
-      ...msg.toObject(),
-      sender: msg.sender
-    })));
+    // Always fetch from database to ensure we have the latest messages
+    const messages = await Message.find({ channel }).populate('sender', 'name _id');
+    
+    // Transform messages to include consistent structure
+    const formattedMessages = messages.map(msg => ({
+      id: msg._id.toString(),
+      senderId: msg.sender._id.toString(),
+      content: msg.content,
+      channel: msg.channel,
+      createdAt: msg.createdAt,
+      sender: {
+        _id: msg.sender._id,
+        name: msg.sender.name
+      }
+    }));
+    
+    res.json(formattedMessages);
   } catch (e) {
-    res.status(500).json({ error: 'Failed to fetch chat messages.' });
+    console.error('Error fetching chat messages:', e);
+    res.status(500).json({ error: 'Failed to fetch chat messages from database' });
   }
 });
 
 app.post('/api/chat', async (req, res) => {
   const { senderId, content, channel } = req.body;
-  const sender = getUserById(senderId);
+  const sender = await getUserById(senderId);
   if (!sender || !content || !channel) return res.status(400).json({ error: 'Invalid data' });
   try {
-    // Save to DB
+    // Save to DB using the MongoDB ObjectId from the database user
     const dbMsg = await Message.create({
-      sender: senderId,
+      sender: sender._id, // This should now be a valid MongoDB ObjectId
       content,
       channel
     });
-    // Save to memory for legacy compatibility
-    if (!global.chatMessages) global.chatMessages = [];
+    
+    // Populate the sender information for the response
+    const populatedMsg = await Message.findById(dbMsg._id).populate('sender', 'name _id');
+    
+    // Create message object with full sender information
     const msg = {
       id: dbMsg._id.toString(),
-      senderId,
+      senderId: sender._id,
+      sender: {
+        _id: sender._id,
+        name: sender.name
+      },
       content,
       channel,
       createdAt: dbMsg.createdAt
     };
-    global.chatMessages.push(msg);
-    res.json({ ...msg, sender });
+    
+    res.json(msg);
   } catch (e) {
+    console.error('Error creating chat message:', e);
     res.status(500).json({ error: 'Failed to save chat message.' });
   }
 });
@@ -238,60 +329,96 @@ app.get('/', (req, res) => {
 // --- Socket.IO Connection (no auth, use userId from handshake query) ---
 io.on('connection', (socket) => {
   const userId = socket.handshake.query.userId;
-  const user = getUserById(userId);
-  if (!user) {
+  let user = null;
+  
+  // Get user info asynchronously
+  getUserById(userId).then(userData => {
+    if (!userData) {
+      socket.disconnect();
+      return;
+    }
+    user = userData;
+    socket.user = user;
+    console.log(`User connected: ${user.name}`);
+  }).catch(err => {
+    console.error('Error getting user:', err);
     socket.disconnect();
-    return;
-  }
-  socket.user = user;
-  console.log(`User connected: ${user.name}`);
-
-  socket.on('join_channel', (channel) => {
-    socket.join(channel);
-    if (!global.chatMessages) global.chatMessages = [];
-    const messages = global.chatMessages.filter(msg => msg.channel === channel).map(msg => ({
-      ...msg,
-      sender: getUserById(msg.senderId)
-    }));
-    socket.emit('message_history', messages);
   });
 
-  socket.on('new_message', (data) => {
+  socket.on('join_channel', async (channel) => {
+    socket.join(channel);
+    try {
+      // Fetch messages from database for this channel
+      const messages = await Message.find({ channel }).populate('sender', 'name _id');
+      const formattedMessages = messages.map(msg => ({
+        id: msg._id.toString(),
+        senderId: msg.sender._id.toString(),
+        content: msg.content,
+        channel: msg.channel,
+        createdAt: msg.createdAt,
+        sender: {
+          _id: msg.sender._id,
+          name: msg.sender.name
+        }
+      }));
+      socket.emit('message_history', formattedMessages);
+    } catch (error) {
+      console.error('Error fetching message history:', error);
+      socket.emit('message_history', []);
+    }
+  });
+
+  socket.on('new_message', async (data) => {
     const { content, channel } = data;
-    if (!content || !channel) return;
-    if (!global.chatMessages) global.chatMessages = [];
-    const msg = {
-      id: String(Date.now()),
-      senderId: user._id,
-      content,
-      channel,
-      createdAt: new Date().toISOString()
-    };
-    global.chatMessages.push(msg);
-    io.to(channel).emit('receive_message', { ...msg, sender: user });
+    if (!content || !channel || !user) return;
+    
+    try {
+      // Save message to database using the MongoDB ObjectId
+      const dbMsg = await Message.create({
+        sender: user._id, // This should now be a valid MongoDB ObjectId
+        content,
+        channel
+      });
+      
+      const msg = {
+        id: dbMsg._id.toString(),
+        senderId: user._id,
+        content,
+        channel,
+        createdAt: dbMsg.createdAt,
+        sender: user
+      };
+      
+      io.to(channel).emit('receive_message', msg);
+    } catch (error) {
+      console.error('Error saving new message:', error);
+    }
   });
 
   socket.on('disconnect', () => {
-    console.log(`User disconnected: ${user.name}`);
+    if (user) {
+      console.log(`User disconnected: ${user.name}`);
+    }
   });
 });
 
 // --- Admin/Test Endpoints to Clear Notes and Chats ---
 app.post('/api/clear-notes', async (req, res) => {
-  global.notes = [];
   try {
     await Note.deleteMany({});
     res.json({ success: true, message: 'All notes cleared.' });
   } catch (e) {
+    console.error('Error clearing notes:', e);
     res.status(500).json({ error: 'Failed to clear notes from database.' });
   }
 });
+
 app.post('/api/clear-chat', async (req, res) => {
-  global.chatMessages = [];
   try {
     await Message.deleteMany({});
     res.json({ success: true, message: 'All chat messages cleared.' });
   } catch (e) {
+    console.error('Error clearing chat messages:', e);
     res.status(500).json({ error: 'Failed to clear chat messages from database.' });
   }
 });
